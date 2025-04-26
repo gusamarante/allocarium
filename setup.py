@@ -16,7 +16,7 @@ setup(
     version=VERSION,
     author="Gustavo Amarante",
     maintainer="Gustavo Amarante",
-    maintainer_email="developer@dsgepy.com",
+    maintainer_email="developer@dsgepy.com",  # TODO change this
     description=DESCRIPTION,
     long_description_content_type="text/markdown",
     long_description=long_description,
@@ -25,10 +25,10 @@ setup(
         'matplotlib',
         'numpy',
         'pandas',
-        'scikit-learn',
-        'statsmodels',
+        'tqdm',
     ],
     keywords=[
-        'asset allocation',
+        'asset allocation',  # TODO allows whitespaces?
+        'portfolio construction',
     ],
 )
