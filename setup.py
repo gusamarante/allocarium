@@ -25,6 +25,7 @@ setup(
         'matplotlib',
         'numpy',
         'pandas',
+        'scipy',
         'tqdm',
     ],
     keywords=[
