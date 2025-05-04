@@ -79,6 +79,7 @@ class Performance:
 
         ax.yaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
         ax.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
+        ax.set_yscale('log')
 
         for label in ax.get_xticklabels() + ax.get_yticklabels():
             label.set_fontsize(15)
