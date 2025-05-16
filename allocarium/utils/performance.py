@@ -10,6 +10,7 @@ class Performance:
 
     # TODO Review
     # TODO Decompose returns seasonally by month/year
+    # TODO add option for frerquency of series
 
     def __init__(self, total_return, rolling_window=252, skip_dd=False):
         """

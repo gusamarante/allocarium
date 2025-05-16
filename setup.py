@@ -24,8 +24,12 @@ setup(
     install_requires=[
         'matplotlib',
         'numpy',
+        'openpyxl',
         'pandas',
+        'scikit-learn',
         'scipy',
+        'seaborn',
+        'statsmodels',
         'tqdm',
     ],
     keywords=[
