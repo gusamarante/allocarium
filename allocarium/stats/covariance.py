@@ -2,8 +2,6 @@ import numpy as np
 import pandas as pd
 
 
-# TODO covariance simulator
-
 # =====================
 # ===== UTILITIES =====
 # =====================
@@ -38,7 +36,8 @@ def cov2corr(cov):
 
 def corr2cov(corr, std):
     """
-    Convert covariance matrix to correlation matrix.
+    Convert a correlation matrix and a vector of standard deviations into a
+    covariance matrix
 
     Parameters
     ----------
@@ -51,7 +50,7 @@ def corr2cov(corr, std):
 
     Returns
     -------
-    Cov: pandas.DataFrame, numpy.array
+    cov: pandas.DataFrame, numpy.array
         Covariance Matrix
     """
     corr_a = np.array(corr)
@@ -82,6 +81,11 @@ def cov_shrinkage(cov, alpha=0.5):
         A scalar between 0 and 1. If alpha=0, there is no shrinkage and the
         output covariance will be the same as the input. If alpha=1, total
         shrinkage and the output will be a diagonal homoskedastic covariance.
+
+    Returns
+    -------
+    scov: pandas.DataFrame, numpy.array
+        Shrunk covariance matrix.
     """
     assert 0 <= alpha <= 1, "`alpha` must be a number between 0 and 1"
 

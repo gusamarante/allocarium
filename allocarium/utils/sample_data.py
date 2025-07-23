@@ -14,7 +14,7 @@ def bbg_total_return():
         index_col=0,
     ).sort_index().dropna(how='all')
 
-    rename_tickers = {
+    rename_tickers = {  # TODO choose better indexes
         "SPX Index": "S&P500",
         "SXXP Index": "EuroStoxx 600",
         "TPX Index": "Topix",
