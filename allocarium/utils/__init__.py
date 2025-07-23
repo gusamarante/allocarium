@@ -1,7 +1,8 @@
 from .performance import Performance
-from .sample_data import bbg_total_return
+from .sample_data import bbg_total_return, mu_cov_example
 
 __all__ = [
-    'Performance',
     'bbg_total_return',
+    'mu_cov_example',
+    'Performance',
 ]

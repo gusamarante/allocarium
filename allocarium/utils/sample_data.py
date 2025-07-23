@@ -1,8 +1,10 @@
 import getpass
+import numpy as np
 import pandas as pd
 
 # TODO add CSV to repository
 USERNAME = getpass.getuser()
+
 
 def bbg_total_return():
 
@@ -29,3 +31,34 @@ def bbg_total_return():
     idxs = idxs[rename_tickers.keys()].rename(rename_tickers, axis=1)
     return idxs
 
+
+def mu_cov_example():
+    """
+    Example of mu and cov matrices to save lines on other codes.
+    :return:
+    """
+
+    asset_names = ["Asset A", "Asset B", "Asset C"]
+    mu = pd.Series(
+        data=[0.1, 0.2, 0.15],
+        index=asset_names,
+    )
+    std = pd.Series(
+        data=[0.2, 0.25, 0.35],
+        index=asset_names,
+    )
+    corr = pd.DataFrame(
+        data=[
+            [1.0, 0.5, 0.3],
+            [0.5, 1.0, 0.4],
+            [0.3, 0.4, 1.0],
+        ],
+        index=asset_names,
+        columns=asset_names,
+    )
+    cov = pd.DataFrame(
+        data=np.diag(std.values) @ corr.values @ np.diag(std.values),
+        index=asset_names,
+        columns=asset_names,
+    )
+    return mu, cov
