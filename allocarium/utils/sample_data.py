@@ -32,7 +32,7 @@ def bbg_total_return():
     return idxs
 
 
-def mu_cov_example():
+def mu_cov_example(size=3):
     """
     Example of mu and cov matrices to save lines on other codes.
     :return:
@@ -61,4 +61,8 @@ def mu_cov_example():
         index=asset_names,
         columns=asset_names,
     )
+
+    mu = mu.iloc[:size]
+    cov = cov.iloc[:size, :size]
+
     return mu, cov
