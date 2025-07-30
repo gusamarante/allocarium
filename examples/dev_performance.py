@@ -1,5 +1,5 @@
 import pandas as pd
-import matplotlib.pyplot as plt
+from allocarium.utils import Performance
 
 df = pd.read_excel(
     r"C:\Users\gamarante\Dropbox\BBG.xlsx",
@@ -7,9 +7,10 @@ df = pd.read_excel(
     index_col='Dates',
 )
 df.index = pd.to_datetime(df.index)
-df = df.sort_index().ffill().dropna()
+df = df.sort_index()
 
-df = 100 * df / df.iloc[0]
-
-df.plot()
-plt.show()
+perf = Performance(
+    eri=df,
+)
+print(perf.sortino)
+# TODO monthly frequency

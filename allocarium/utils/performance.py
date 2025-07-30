@@ -8,46 +8,46 @@ from matplotlib.ticker import PercentFormatter
 
 class Performance:
 
+    year_periods = {
+        'B': 252,  # Business days
+    }
+
     # TODO Review
     # TODO Decompose returns seasonally by month/year
     # TODO add option for frerquency of series
 
-    def __init__(self, eri, rolling_window=252, skip_dd=False):
+    def __init__(self, eri, skip_dd=False):
         # TODO Documentation
 
-        assert isinstance(eri, pd.DataFrame), \
-            "'total_return' must be a pandas DataFrame, even if there is only one column"
+        if isinstance(eri, pd.Series):
+            eri = eri.to_frame()
+        elif not isinstance(eri, pd.DataFrame):
+            raise TypeError("'total_return' must be a pandas Series or DataFrame")
 
-        self.total_return = eri
-        self.start_date = eri.isna().astype(int).diff().idxmin().rename('Start Date')
-        self.rolling_window = rolling_window
+        self.eri = eri
         self.returns_ts = eri.pct_change(1)
-        self.returns_ann = self._get_ann_returns()
-        self.std = self._get_ann_std()
-        self.sharpe = self.returns_ann / self.std
+        self.inferred_freq = self._get_inferred_freq()
+        self.ann_return = self._get_ann_returns()
+        self.vol = self._get_ann_vol()
+        self.sharpe = self.ann_return / self.vol
         self.skewness = self.returns_ts.skew()
         self.kurtosis = self.returns_ts.kurt()  # Excess Kurtosis (k=0 is normal)
         self.sortino = self._get_sortino()
 
-        if skip_dd:
-            self.drawdowns = None
-            self.max_dd = (eri / eri.expanding().max()).min() - 1
-        else:
-            self.drawdowns = self._get_drawdowns()
-            self.max_dd = self.drawdowns.groupby(level=0).min()['dd']
-
-        self.table = self._get_perf_table(skip_dd=skip_dd)
-        self.rolling_return = (1 + self.total_return.pct_change(rolling_window)) ** (252 / rolling_window) - 1
-        self.rolling_std = self.returns_ts.rolling(rolling_window).std() * np.sqrt(252)
-        self.rolling_sharpe = self.rolling_return / self.rolling_std
-        self.rolling_skewness = self.returns_ts.rolling(rolling_window).skew()
-        self.rolling_kurtosis = self.returns_ts.rolling(rolling_window).kurt()
+        # if skip_dd:
+        #     self.drawdowns = None
+        #     self.max_dd = (eri / eri.expanding().max()).min() - 1
+        # else:
+        #     self.drawdowns = self._get_drawdowns()
+        #     self.max_dd = self.drawdowns.groupby(level=0).min()['dd']
+        #
+        # self.table = self._get_perf_table(skip_dd=skip_dd)
 
     def plot_drawdowns(self, name, n=5, show_chart=False, save_path=None):
         # TODO Documentation
         # TODO Option for logscale
 
-        tri = self.total_return[name].interpolate(limit_area='inside')
+        tri = self.eri[name].interpolate(limit_area='inside')
         fig = plt.figure(figsize=(12, 12 * 0.61))
         ax = fig.gca()
         plt.plot(tri, color='#0000CD', linewidth=1)
@@ -91,7 +91,7 @@ class Performance:
         # TODO Documentation
         # TODO pass axes
 
-        tr = self.total_return[name].dropna()
+        tr = self.eri[name].dropna()
         exp_max = tr.expanding().max()
         uw = 100 * (tr / exp_max - 1)
 
@@ -148,6 +148,50 @@ class Performance:
 
         plt.close()
 
+    def _get_ann_returns(self):
+
+        df_ret = pd.Series(name='Annualized Returns', dtype=float)
+        for col in self.eri.columns:
+            aux = self.eri[col].dropna()
+            start, end = aux.iloc[0], aux.iloc[-1]
+            n = len(aux) - 1
+            df_ret.loc[col] = (end / start) ** (self.year_periods[self.inferred_freq] / n) - 1
+
+        return df_ret
+
+    def _get_ann_vol(self):
+
+        df_std = pd.Series(name='Annualized Vol', dtype=float)
+        for col in self.eri.columns:
+            aux = self.returns_ts[col].dropna()
+            df_std.loc[col] = aux.std() * np.sqrt(self.year_periods[self.inferred_freq])
+
+        return df_std
+
+    def _get_inferred_freq(self):
+        inf_freq = pd.infer_freq(self.eri.index)
+
+        if inf_freq is None:
+            # If infer_freq is None, we assume daily frequency, as it is the
+            # most common
+            return 'B'
+        else:
+            return inf_freq
+
+    def _get_sortino(self):
+
+        df_sor = pd.Series(name='Sortino', dtype=float)
+        for col in self.eri.columns:
+            aux = self.returns_ts[col][self.returns_ts[col] < 0].dropna()
+            df_sor.loc[col] = self.ann_return[col] / (np.sqrt(self.year_periods[self.inferred_freq]) * aux.std())
+
+        return df_sor
+
+
+
+
+
+
     def _get_drawdowns(self):
         """
         Finds all the drawdowns, from peak to bottom, and its dates. At the
@@ -159,9 +203,9 @@ class Performance:
 
         df_drawdowns = pd.DataFrame()
 
-        for col in tqdm(self.total_return.columns, 'Computing Drawdowns'):
-            data = pd.DataFrame(index=self.total_return[col].dropna().index)
-            data['tracker'] = self.total_return[col].dropna()
+        for col in tqdm(self.eri.columns, 'Computing Drawdowns'):
+            data = pd.DataFrame(index=self.eri[col].dropna().index)
+            data['tracker'] = self.eri[col].dropna()
             data['expanding max'] = data['tracker'].expanding().max()
             data['dd'] = data['tracker'] / data['expanding max'] - 1
             data['iszero'] = data['dd'] == 0
@@ -219,40 +263,11 @@ class Performance:
         df_drawdowns['dd'] = df_drawdowns['dd'].astype(float)
         return df_drawdowns
 
-    def _get_ann_returns(self):
-
-        df_ret = pd.Series(name='Annualized Returns', dtype=float)
-        for col in self.total_return.columns:
-            aux = self.total_return[col].dropna()
-            start, end = aux.iloc[0], aux.iloc[-1]
-            n = len(aux) - 1
-            df_ret.loc[col] = (end / start) ** (252 / n) - 1
-
-        return df_ret
-
-    def _get_ann_std(self):
-
-        df_std = pd.Series(name='Annualized Standard Deviation', dtype=float)
-        for col in self.total_return.columns:
-            aux = self.returns_ts[col].dropna()
-            df_std.loc[col] = aux.std() * np.sqrt(252)
-
-        return df_std
-
-    def _get_sortino(self):
-
-        df_sor = pd.Series(name='Sortino', dtype=float)
-        for col in self.total_return.columns:
-            aux = self.returns_ts[col][self.returns_ts[col] < 0].dropna()
-            df_sor.loc[col] = self.returns_ann[col] / (np.sqrt(252) * aux.std())
-
-        return df_sor
-
     def _get_perf_table(self, skip_dd=False):
 
-        df = pd.DataFrame(columns=self.total_return.columns)
+        df = pd.DataFrame(columns=self.eri.columns)
 
-        df.loc['Return'] = self.returns_ann
+        df.loc['Return'] = self.ann_return
         df.loc['Vol'] = self.std
         df.loc['Sharpe'] = self.sharpe
         df.loc['Skew'] = self.skewness
