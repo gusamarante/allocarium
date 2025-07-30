@@ -10,6 +10,7 @@ class Performance:
 
     year_periods = {
         'B': 252,  # Business days
+        'ME': 12,  # Monthly
     }
 
     # TODO Review
@@ -26,6 +27,7 @@ class Performance:
 
         self.eri = eri
         self.returns_ts = eri.pct_change(1)
+        self.start_date = eri.apply(pd.DataFrame.first_valid_index).rename("Start Date")
         self.inferred_freq = self._get_inferred_freq()
         self.ann_return = self._get_ann_returns()
         self.vol = self._get_ann_vol()
@@ -34,14 +36,14 @@ class Performance:
         self.kurtosis = self.returns_ts.kurt()  # Excess Kurtosis (k=0 is normal)
         self.sortino = self._get_sortino()
 
-        # if skip_dd:
-        #     self.drawdowns = None
-        #     self.max_dd = (eri / eri.expanding().max()).min() - 1
-        # else:
-        #     self.drawdowns = self._get_drawdowns()
-        #     self.max_dd = self.drawdowns.groupby(level=0).min()['dd']
-        #
-        # self.table = self._get_perf_table(skip_dd=skip_dd)
+        if skip_dd:
+            self.drawdowns = None
+            self.max_dd = (eri / eri.expanding().max()).min() - 1
+        else:
+            self.drawdowns = self._get_drawdowns()
+            self.max_dd = self.drawdowns.groupby(level=0).min()['dd']
+
+        self.table = self._get_perf_table(skip_dd=skip_dd)
 
     def plot_drawdowns(self, name, n=5, show_chart=False, save_path=None):
         # TODO Documentation
@@ -168,39 +170,12 @@ class Performance:
 
         return df_std
 
-    def _get_inferred_freq(self):
-        inf_freq = pd.infer_freq(self.eri.index)
-
-        if inf_freq is None:
-            # If infer_freq is None, we assume daily frequency, as it is the
-            # most common
-            return 'B'
-        else:
-            return inf_freq
-
-    def _get_sortino(self):
-
-        df_sor = pd.Series(name='Sortino', dtype=float)
-        for col in self.eri.columns:
-            aux = self.returns_ts[col][self.returns_ts[col] < 0].dropna()
-            df_sor.loc[col] = self.ann_return[col] / (np.sqrt(self.year_periods[self.inferred_freq]) * aux.std())
-
-        return df_sor
-
-
-
-
-
-
     def _get_drawdowns(self):
         """
         Finds all the drawdowns, from peak to bottom, and its dates. At the
-        margin, even if drawdown is not recovered, it treats the local bottom as
-        the bottom of the last drawdon.
-        :return: pandas.DataFrame with a MultiIndex. The first level is the asset,
-                 and the second are the ranked drawdowns.
+        margin, even if drawdown is not recovered, it treats the last local
+        bottom as the bottom of the last drawdon.
         """
-
         df_drawdowns = pd.DataFrame()
 
         for col in tqdm(self.eri.columns, 'Computing Drawdowns'):
@@ -252,9 +227,11 @@ class Performance:
 
             data = data[['current min', 'last start', 'end']].reset_index().drop('index', axis=1)
 
-            df_add = pd.DataFrame(index=pd.MultiIndex.from_product([[col], data.index]),
-                                  data=data.values,
-                                  columns=['dd', 'start', 'end'])
+            df_add = pd.DataFrame(
+                index=pd.MultiIndex.from_product([[col], data.index]),
+                data=data.values,
+                columns=['dd', 'start', 'end'],
+            )
 
             df_add['duration'] = (df_add['end'] - df_add['start']).dt.days
 
@@ -263,12 +240,22 @@ class Performance:
         df_drawdowns['dd'] = df_drawdowns['dd'].astype(float)
         return df_drawdowns
 
+    def _get_inferred_freq(self):
+        inf_freq = pd.infer_freq(self.eri.index)
+
+        if inf_freq is None:
+            # If infer_freq is None, we assume daily frequency, as it is the
+            # most common
+            return 'B'
+        else:
+            return inf_freq
+
     def _get_perf_table(self, skip_dd=False):
 
         df = pd.DataFrame(columns=self.eri.columns)
 
         df.loc['Return'] = self.ann_return
-        df.loc['Vol'] = self.std
+        df.loc['Vol'] = self.vol
         df.loc['Sharpe'] = self.sharpe
         df.loc['Skew'] = self.skewness
         df.loc['Kurt'] = self.kurtosis
@@ -281,3 +268,21 @@ class Performance:
         df.loc['Start Date'] = self.start_date
 
         return df
+
+    def _get_sortino(self):
+
+        df_sor = pd.Series(name='Sortino', dtype=float)
+        for col in self.eri.columns:
+            aux = self.returns_ts[col][self.returns_ts[col] < 0].dropna()
+            df_sor.loc[col] = self.ann_return[col] / (np.sqrt(self.year_periods[self.inferred_freq]) * aux.std())
+
+        return df_sor
+
+
+
+
+
+
+
+
+

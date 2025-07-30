@@ -8,9 +8,11 @@ df = pd.read_excel(
 )
 df.index = pd.to_datetime(df.index)
 df = df.sort_index()
+df = df.resample("M").last()
 
 perf = Performance(
     eri=df,
+    skip_dd=False
 )
-print(perf.sortino)
+print(perf.drawdowns)
 # TODO monthly frequency
