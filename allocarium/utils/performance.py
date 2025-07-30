@@ -12,26 +12,16 @@ class Performance:
     # TODO Decompose returns seasonally by month/year
     # TODO add option for frerquency of series
 
-    def __init__(self, total_return, rolling_window=252, skip_dd=False):
-        """
-        Computes performance measures for each column of 'total_return'
+    def __init__(self, eri, rolling_window=252, skip_dd=False):
+        # TODO Documentation
 
-        Parameters
-        ----------
-        total_return: pandas.DataFrame
-            Total return inndexes
-
-        rolling_window: int
-            number of business day for the rolling measures
-        """
-
-        assert isinstance(total_return, pd.DataFrame), \
+        assert isinstance(eri, pd.DataFrame), \
             "'total_return' must be a pandas DataFrame, even if there is only one column"
 
-        self.total_return = total_return
-        self.start_date = total_return.isna().astype(int).diff().idxmin().rename('Start Date')
+        self.total_return = eri
+        self.start_date = eri.isna().astype(int).diff().idxmin().rename('Start Date')
         self.rolling_window = rolling_window
-        self.returns_ts = total_return.pct_change(1)
+        self.returns_ts = eri.pct_change(1)
         self.returns_ann = self._get_ann_returns()
         self.std = self._get_ann_std()
         self.sharpe = self.returns_ann / self.std
@@ -41,7 +31,7 @@ class Performance:
 
         if skip_dd:
             self.drawdowns = None
-            self.max_dd = (total_return / total_return.expanding().max()).min() - 1
+            self.max_dd = (eri / eri.expanding().max()).min() - 1
         else:
             self.drawdowns = self._get_drawdowns()
             self.max_dd = self.drawdowns.groupby(level=0).min()['dd']
