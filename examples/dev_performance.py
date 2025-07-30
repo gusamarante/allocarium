@@ -8,11 +8,15 @@ df = pd.read_excel(
 )
 df.index = pd.to_datetime(df.index)
 df = df.sort_index()
-df = df.resample("M").last()
+# df = df.resample("M").last()
 
 perf = Performance(
     eri=df,
     skip_dd=False
 )
-print(perf.drawdowns)
+perf.plot_drawdowns(
+    name='IEF',
+    show_chart=True,
+    n=3,
+)
 # TODO monthly frequency

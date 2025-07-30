@@ -3,7 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from matplotlib.ticker import PercentFormatter
+from matplotlib.ticker import PercentFormatter, LogLocator, ScalarFormatter, MultipleLocator
 
 
 class Performance:
@@ -50,15 +50,21 @@ class Performance:
         # TODO Option for logscale
 
         tri = self.eri[name].interpolate(limit_area='inside')
-        fig = plt.figure(figsize=(12, 12 * 0.61))
+        fig = plt.figure()
         ax = fig.gca()
-        plt.plot(tri, color='#0000CD', linewidth=1)
+
+        ax.set_title(
+            f'{name} - {n} Biggest Drawdowns',
+            fontdict={'fontweight': 'bold'},
+        )
+
+        plt.plot(tri, color='tab:blue', linewidth=1)
 
         for dd in range(n):
             try:
                 start = self.drawdowns.loc[name].loc[dd, 'start']
                 end = self.drawdowns.loc[name].loc[dd, 'end']
-                plt.plot(tri.loc[start: end], color='#E00000')
+                plt.plot(tri.loc[start: end], color='tab:red')
             except KeyError:
                 pass
 
@@ -72,12 +78,16 @@ class Performance:
 
         ax.yaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
         ax.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
+        # loc = MultipleLocator(base=20)
+        # ax.yaxis.set_major_locator(loc)
         ax.set_yscale('log')
+        ax.set_ylabel('Return Index (Log-Scale)')
+        ax.yaxis.set_major_locator(LogLocator(base=10, numticks=10))
 
-        for label in ax.get_xticklabels() + ax.get_yticklabels():
-            label.set_fontsize(15)
-
-        ax.set_title(f'{name} - {n} Biggest Drawdowns', fontdict={'fontsize': 15 + 2, 'fontweight': 'bold'})
+        plain = ScalarFormatter()  # default is plain formatting
+        plain.set_scientific(False)  # disable 1e3 style
+        plain.set_useOffset(False)  # disable "+3e2" offset
+        ax.yaxis.set_major_formatter(plain)
 
         plt.tight_layout()
 
