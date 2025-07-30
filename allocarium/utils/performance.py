@@ -12,10 +12,7 @@ class Performance:
         'B': 252,  # Business days
         'ME': 12,  # Monthly
     }
-
-    # TODO Review
     # TODO Decompose returns seasonally by month/year
-    # TODO add option for frerquency of series
 
     def __init__(self, eri, skip_dd=False):
         # TODO Documentation
