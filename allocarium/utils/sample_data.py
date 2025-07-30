@@ -49,9 +49,9 @@ def mu_cov_example(size=3):
     )
     corr = pd.DataFrame(
         data=[
-            [1.0, 0.5, 0.3],
-            [0.5, 1.0, 0.4],
-            [0.3, 0.4, 1.0],
+            [1.0, 0.2, 0.0],
+            [0.2, 1.0, 0.1],
+            [0.0, 0.1, 1.0],
         ],
         index=asset_names,
         columns=asset_names,

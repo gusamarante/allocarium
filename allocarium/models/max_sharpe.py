@@ -29,8 +29,8 @@ class MaxSharpe:
         self.allow_shorts = allow_shorts
 
         if allow_shorts:
-            # TODO Analytical solution of the max sharpe
-            pass
+            self.mu_p, self.sigma_p, self.risky_weights, self.sharpe_p = self._analytical_tangency()
+
         else:
             # Numerical solution
             self.mu_p, self.sigma_p, self.risky_weights, self.sharpe_p = self._numerical_tangency()
@@ -42,6 +42,23 @@ class MaxSharpe:
         cond2 = sorted(cov.index) == sorted(cov.columns)
         cond = cond1 and cond2
         assert cond, "elements in the input indexes do not match"
+
+    def _analytical_tangency(self):
+
+        denom = inv(self.cov.values) @ (self.mu.values - self.rf)
+        ws = denom / np.sum(denom)
+        mu_p = np.sum(ws * self.mu.values)
+        sigma_p = np.sqrt(ws.T @ self.cov.values @ ws)
+        sharpe_p = (mu_p - self.rf) / sigma_p
+
+        weights = pd.Series(
+            index=self.asset_names,
+            data=ws,
+            name='Risky Weights',
+        )
+
+        return mu_p, sigma_p, weights, sharpe_p
+
 
     def _numerical_tangency(self):
         """
