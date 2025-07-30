@@ -9,13 +9,32 @@ import pandas as pd
 import numpy as np
 
 
-# TODO Max Utility
-# TODO classes can have a ".from_ts" method to create the object from a time series of returns, this would require an establisehed estimator for mu and sigma
-
 class MaxSharpe:
 
     def __init__(self, mu, cov, rf=0, allow_shorts=True):
-        # TODO Documentation (for when rf is available, returns the tangency portfolio)
+        """
+        Returns the portfolio with maximum Sharpe ratio given the expected
+        returns, covariance matrix, and risk-free asset.
+
+        All the labels in the input Series and DataFrames must match.
+
+        Parameters
+        ----------
+        mu : pd.Series
+            Expected returns
+
+        cov : pd.DataFrame
+            Covariance matrix of the returns
+
+        rf : float, optional
+            Risk-free rate. It deafults to zero if nothing is passed, meaning
+            that in this case you should pass mu as the excess returns.
+
+        allow_shorts : bool, optional
+            If True (default), short selling is allowed and the analytical
+            solution is used. If False, short selling is not allowed and a
+            numerical optimization is used.
+        """
 
         self._assertions(mu, cov)
 
@@ -58,7 +77,6 @@ class MaxSharpe:
         )
 
         return mu_p, sigma_p, weights, sharpe_p
-
 
     def _numerical_tangency(self):
         """
